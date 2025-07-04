@@ -1,5 +1,28 @@
 <?php
 // index.php (Dual Platform Uploader - Final Fix v10)
+
+// Add basic error handling for production
+error_reporting(E_ERROR | E_WARNING | E_PARSE);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Check if config.php exists, if not create a basic fallback
+if (!file_exists(__DIR__ . '/config.php')) {
+    // Create basic directories if they don't exist
+    if (!is_dir(__DIR__ . '/uploads')) {
+        mkdir(__DIR__ . '/uploads', 0755, true);
+    }
+    if (!is_dir(__DIR__ . '/credentials')) {
+        mkdir(__DIR__ . '/credentials', 0755, true);
+    }
+    
+    // Redirect to settings if no config exists
+    if (!file_exists(__DIR__ . '/credentials/token.json')) {
+        header('Location: setting.php');
+        exit();
+    }
+}
+
 require_once 'config.php';
 
 // --- AJAX UPLOAD HANDLER ---

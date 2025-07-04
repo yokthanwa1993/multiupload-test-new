@@ -1,9 +1,18 @@
 <?php
 // setting.php - หน้าแก้ไขค่าต่างๆใน credentials/token.json
 
-$tokenPath = __DIR__ . '/credentials/token.json';
+// Create directories if they don't exist
+$credentialsDir = __DIR__ . '/credentials/';
 $uploadDir = __DIR__ . '/uploads/';
-if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+if (!is_dir($credentialsDir)) {
+    mkdir($credentialsDir, 0755, true);
+}
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0755, true);
+}
+
+$tokenPath = $credentialsDir . 'token.json';
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

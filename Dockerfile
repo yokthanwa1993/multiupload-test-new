@@ -1,7 +1,5 @@
-# Use an official PHP image with Apache, which is well-suited for this project.
-# Using PHP 8.1 as a stable base.
-# Force rebuild: 2025-07-04-04:26:00
-FROM php:8.1-apache
+# Use PHP CLI image for simpler deployment
+FROM php:8.1-cli
 
 # Install system dependencies required for PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -13,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     libzip-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure and install required PHP extensions for the project.
@@ -24,30 +23,25 @@ RUN apt-get update && apt-get install -y \
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install mbstring fileinfo gd curl pdo pdo_mysql zip
 
+# Set the working directory
+WORKDIR /var/www/html
+
 # Copy custom PHP configuration to increase upload limits
 COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
-# Copy all application files to Apache's document root
-COPY . /var/www/html/
+# Copy all application files
+COPY . .
 
-# Create directories for uploads and credentials within the document root.
-# Grant the web server user (www-data) write permissions to these directories.
-# This is crucial so that the application can save uploaded files and access tokens.
-RUN mkdir -p /var/www/html/uploads /var/www/html/credentials && \
-    chown -R www-data:www-data /var/www/html && \
-    chmod -R 775 /var/www/html/uploads /var/www/html/credentials
-
-# Enable Apache's rewrite module for potential .htaccess usage
-RUN a2enmod rewrite
-
-# Set proper working directory
-WORKDIR /var/www/html
-
-# Add required directory permissions to Apache config to allow access to the document root.
-RUN echo '\n<Directory /var/www/html>\n    Options Indexes FollowSymLinks\n    AllowOverride All\n    Require all granted\n</Directory>\n' >> /etc/apache2/apache2.conf
+# Create directories and set permissions
+RUN mkdir -p uploads credentials && \
+    chmod -R 755 uploads credentials
 
 # Expose port 80 for web traffic
 EXPOSE 80
 
-# Start Apache in the foreground
-CMD ["apache2-foreground"] 
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:80/health.php || exit 1
+
+# Start PHP built-in server
+CMD ["php", "-S", "0.0.0.0:80", "-t", "/var/www/html"] 
