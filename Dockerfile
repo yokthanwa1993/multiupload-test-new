@@ -24,34 +24,30 @@ RUN apt-get update && apt-get install -y \
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install mbstring fileinfo gd curl pdo pdo_mysql zip
 
-# Set the working directory to /app, standard for Coolify
-WORKDIR /app
-
 # Copy custom PHP configuration to increase upload limits
 COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
-# Copy all application files from the current directory to the /app directory in the container.
-COPY . .
+# Copy all application files to Apache's document root
+COPY . /var/www/html/
 
-# Create directories for uploads and credentials within the workdir.
+# Create directories for uploads and credentials within the document root.
 # Grant the web server user (www-data) write permissions to these directories.
 # This is crucial so that the application can save uploaded files and access tokens.
-RUN mkdir -p uploads credentials && \
-    chown -R www-data:www-data uploads credentials && \
-    chmod -R 775 uploads credentials
-
-# Add a command to list directory permissions for debugging during deployment.
-# This will show up in the Coolify build logs.
-RUN ls -la /app
-
-# Apache in the base image is already configured to point to /var/www/html.
-# We need to change Apache's document root to our new working directory /app.
-RUN sed -i 's!/var/www/html!/app!g' /etc/apache2/sites-available/000-default.conf
+RUN mkdir -p /var/www/html/uploads /var/www/html/credentials && \
+    chown -R www-data:www-data /var/www/html && \
+    chmod -R 775 /var/www/html/uploads /var/www/html/credentials
 
 # Enable Apache's rewrite module for potential .htaccess usage
 RUN a2enmod rewrite
 
-# Add required directory permissions to Apache config to allow access to the /app directory.
-RUN echo '\n<Directory /app>\n    Options Indexes FollowSymLinks\n    AllowOverride All\n    Require all granted\n</Directory>\n' >> /etc/apache2/apache2.conf
+# Set proper working directory
+WORKDIR /var/www/html
 
-# The apache server in the base image is already configured to expose port 80. 
+# Add required directory permissions to Apache config to allow access to the document root.
+RUN echo '\n<Directory /var/www/html>\n    Options Indexes FollowSymLinks\n    AllowOverride All\n    Require all granted\n</Directory>\n' >> /etc/apache2/apache2.conf
+
+# Expose port 80 for web traffic
+EXPOSE 80
+
+# Start Apache in the foreground
+CMD ["apache2-foreground"] 
