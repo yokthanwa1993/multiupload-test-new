@@ -1,0 +1,16 @@
+# CapRover deployment file
+deploy.tar
+
+# Sensitive credentials
+credentials/
+user_token.json
+token.json
+
+# Uploaded files
+uploads/
+
+# Logs
+debug.log
+
+# OS-specific
+.DS_Store 

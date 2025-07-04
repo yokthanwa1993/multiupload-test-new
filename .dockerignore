@@ -1,0 +1,8 @@
+# Updated 2025-07-04 - Force rebuild
+.git
+.gitignore
+README.md
+*.log
+node_modules
+.env
+.DS_Store 
